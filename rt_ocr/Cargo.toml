@@ -1,0 +1,8 @@
+[package]
+name = "rt_ocr"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ocr-rs = "2.3.2"
+image = "0.25"
