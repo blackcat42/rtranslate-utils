@@ -1,8 +1,15 @@
 [package]
 name = "rt_ocr"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
 ocr-rs = "2.3.2"
 image = "0.25"
+
+[profile.release]
+strip = true
+#codegen-units = 1
+#panic = "abort"
+lto = true
+opt-level = "z"
