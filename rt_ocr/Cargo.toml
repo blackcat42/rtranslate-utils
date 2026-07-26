@@ -1,7 +1,9 @@
 [package]
 name = "rt_ocr"
 version = "0.1.1"
+authors = ["sergey gapchenko <gapchenko42@gmail.com>"]
 edition = "2024"
+publish = false
 
 [dependencies]
 ocr-rs = "2.3.2"

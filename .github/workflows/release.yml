@@ -33,17 +33,23 @@ jobs:
       - name: Install dependencies on Windows
         run: |
           choco install cmake -y
+          choco install strawberryperl -y
+          choco install pkgconfiglite -y
+          choco install llvm -y
+          choco install nasm -y
         shell: cmd
 
       - name: Build on Windows with Static Linking
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
-        run: cargo build --release --locked --target i686-pc-windows-msvc --bin rt_ocr
+        run: cargo build --release --target i686-pc-windows-msvc --workspace
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
-          files: target/i686-pc-windows-msvc/release/rt_ocr.exe
+          files: |
+            target/i686-pc-windows-msvc/release/rt_ocr.exe
+            target/i686-pc-windows-msvc/release/wreq_cli.exe
           tag_name: ${{ github.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "rt_ocr",
+    "wreq_cli"
 ]
 
 [profile.release]
