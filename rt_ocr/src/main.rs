@@ -75,9 +75,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let engine = engine?;
         let img = image::open(f)?;
         let results = engine.recognize(&img)?;
+        write!(handle, "<OCR_RESULTS_BEGIN>")?;
         for item in results {
             writeln!(handle, "{}", item.text)?;
         }
+        writeln!(handle, "<OCR_RESULTS_END>")?;
     } else if mode == RunMode::Pipe {
         let engine = engine?;
         let mut stdin = io::stdin().lock();

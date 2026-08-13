@@ -39,10 +39,31 @@ jobs:
           choco install nasm -y
         shell: cmd
 
-      - name: Build on Windows with Static Linking
+      - name: Build rt_ocr on Windows x86 Debug
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
-        run: cargo build --release --target i686-pc-windows-msvc --workspace
+        run: cargo build --target i686-pc-windows-msvc --bin rt_ocr
+
+      - name: Build rt_ocr on Windows x64
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+        run: cargo build --release --target x86_64-pc-windows-msvc --bin rt_ocr
+
+      - name: Build wreq_cli on Windows x86 Debug
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+        run: cargo build --target i686-pc-windows-msvc --bin wreq_cli
+
+      - name: Build wreq_cli on Windows x64
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+        run: cargo build --release --target x86_64-pc-windows-msvc --bin wreq_cli
+
+      - name: Rename x64 binaries
+        shell: pwsh
+        run: |
+          Copy-Item target/x86_64-pc-windows-msvc/release/rt_ocr.exe target/x86_64-pc-windows-msvc/release/rt_ocr_x64.exe
+          Copy-Item target/x86_64-pc-windows-msvc/release/wreq_cli.exe target/x86_64-pc-windows-msvc/release/wreq_cli_x64.exe
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
@@ -50,6 +71,8 @@ jobs:
           files: |
             target/i686-pc-windows-msvc/release/rt_ocr.exe
             target/i686-pc-windows-msvc/release/wreq_cli.exe
+            target/x86_64-pc-windows-msvc/release/rt_ocr_x64.exe
+            target/x86_64-pc-windows-msvc/release/wreq_cli_x64.exe
           tag_name: ${{ github.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

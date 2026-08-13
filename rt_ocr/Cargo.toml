@@ -1,6 +1,6 @@
 [package]
 name = "rt_ocr"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["sergey gapchenko <gapchenko42@gmail.com>"]
 edition = "2024"
 publish = false
@@ -9,9 +9,6 @@ publish = false
 ocr-rs = "2.3.2"
 image = "0.25"
 
-[profile.release]
-strip = true
-#codegen-units = 1
-#panic = "abort"
-lto = true
-opt-level = "z"
+[build-dependencies]
+thunk-rs = { version = "0.3.5", features = ["xp"] } #"subsystem_windows", , "vc_ltl_only"
+
