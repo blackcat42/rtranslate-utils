@@ -69,8 +69,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/i686-pc-windows-msvc/release/rt_ocr.exe
-            target/i686-pc-windows-msvc/release/wreq_cli.exe
+            target/i686-pc-windows-msvc/debug/rt_ocr.exe
+            target/i686-pc-windows-msvc/debug/wreq_cli.exe
             target/x86_64-pc-windows-msvc/release/rt_ocr_x64.exe
             target/x86_64-pc-windows-msvc/release/wreq_cli_x64.exe
           tag_name: ${{ github.ref }}
