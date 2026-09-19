@@ -1,5 +1,6 @@
 use ocr_rs::OcrEngine;
-use image::{DynamicImage, ImageBuffer, Rgba};
+//use ocr_rs::{OcrEngine, OcrEngineConfig, Backend};
+use image::{imageops, DynamicImage, ImageBuffer, Rgba};
 use std::io::{self, Read, Write, BufRead};
 
 #[derive(PartialEq)]
@@ -16,6 +17,10 @@ fn main() {
     }
 }
 
+fn round_up(value: u32, multiple: u32) -> u32 {
+    value.div_ceil(multiple) * multiple
+}
+
 fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut file: Option<String> = None;
@@ -24,6 +29,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut charset = "ocr_models/ppocr_keys_v6_small.txt".to_string();
 
     let mut mode = RunMode::Help;
+    let mut token_start: Option<String> = None;
+    let mut token_end: Option<String> = None;
 
     let mut args = std::env::args();
     while let Some(arg) = args.next() {
@@ -41,6 +48,17 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
         if arg == "--pipe" || arg == "-p" {
             mode = RunMode::Pipe;
+        }
+
+        if arg.starts_with("--token_start=") && let Some((_flag, value)) = arg.split_once('=') {
+            token_start = Some(value.to_string());
+        } else if arg == "--token_start" && let Some(value) = args.next() {
+            token_start = Some(value.to_string());
+        }
+        if arg.starts_with("--token_end=") && let Some((_flag, value)) = arg.split_once('=') {
+            token_end = Some(value.to_string());
+        } else if arg == "--token_end" && let Some(value) = args.next() {
+            token_end = Some(value.to_string());
         }
 
         if arg.starts_with("--det_model=") && let Some((_flag, value)) = arg.split_once('=') {
@@ -62,6 +80,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    /*let config = OcrEngineConfig::new()
+    .with_backend(Backend::OpenGL);*/
+
     let engine = OcrEngine::new(
         &det_model,
         &rec_model,
@@ -75,11 +96,17 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let engine = engine?;
         let img = image::open(f)?;
         let results = engine.recognize(&img)?;
-        write!(handle, "<OCR_RESULTS_BEGIN>")?;
-        for item in results {
-            writeln!(handle, "{}", item.text)?;
+        if let Some(t_s) = token_start && let Some(t_e) = token_end {
+            write!(handle, "{}", t_s)?; //<OCR_RESULTS_BEGIN>
+            for item in results {
+                writeln!(handle, "{}", item.text)?;
+            }
+            writeln!(handle, "{}", t_e)?; //<OCR_RESULTS_END>
+        } else {
+            for item in results {
+                writeln!(handle, "{}", item.text)?;
+            }
         }
-        writeln!(handle, "<OCR_RESULTS_END>")?;
     } else if mode == RunMode::Pipe {
         let engine = engine?;
         let mut stdin = io::stdin().lock();
@@ -94,15 +121,27 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         stdin.read_to_end(&mut buffer)?;
 
         let rgba_img = ImageBuffer::<Rgba<u8>, Vec<u8>>::from_raw(w, h, buffer)
-            .ok_or("ImageBuffer error")?;
-        let img = DynamicImage::ImageRgba8(rgba_img);
+        .ok_or("ImageBuffer error")?;
+
+        let padded_w = round_up(w + (10 * 2), 32);
+        let padded_h = round_up(h + (10 * 2), 32);
+        let mut padded_img = ImageBuffer::from_pixel(padded_w, padded_h, Rgba([255, 255, 255, 255]));
+        imageops::overlay(&mut padded_img, &rgba_img, 10, 10);
+
+        let img = DynamicImage::ImageRgba8(padded_img);
 
         let results = engine.recognize(&img)?;
-        write!(handle, "<OCR_RESULTS_BEGIN>")?;
-        for item in results {
-            writeln!(handle, "{}", item.text)?;
+        if let Some(t_s) = token_start && let Some(t_e) = token_end {
+            write!(handle, "{}", t_s)?; //<OCR_RESULTS_BEGIN>
+            for item in results {
+                writeln!(handle, "{}", item.text)?;
+            }
+            writeln!(handle, "{}", t_e)?; //<OCR_RESULTS_END>
+        } else {
+            for item in results {
+                writeln!(handle, "{}", item.text)?;
+            }
         }
-        writeln!(handle, "<OCR_RESULTS_END>")?;
     } else {
         println!("Usage: rt_ocr [OPTIONS]\n");
         println!("Options:");
@@ -112,7 +151,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         println!("  --det_model <PATH>    Path to the detection model (e.g. PP-OCRv6_small_det.mnn)");
         println!("  --rec_model <PATH>    Path to the recognition model (e.g. PP-OCRv6_small_rec.mnn)");
         println!("  --charset <PATH>      Path to the charset file (e.g. ppocr_keys_v6_small.txt)");
-
+        println!("  --token_start <str>");
+        println!("  --token_end <str>");
         println!("\nPress Enter to exit...");
         let mut iterator = std::io::stdin().lock().lines();
         iterator.next();
