@@ -29,6 +29,10 @@ jobs:
 
       - name: Cache cargo
         uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            rt_ocr -> rt_ocr/target
+            wreq_cli -> wreq_cli/target
 
       - name: Install dependencies on Windows
         run: |
@@ -39,40 +43,40 @@ jobs:
           choco install nasm -y
         shell: cmd
 
-      - name: Build rt_ocr on Windows x86 Debug
+      - name: Build rt_ocr on Windows x86
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
-        run: cargo build --target i686-pc-windows-msvc --bin rt_ocr
+        run: cargo build --release --locked --manifest-path rt_ocr/Cargo.toml --target i686-pc-windows-msvc
 
       - name: Build rt_ocr on Windows x64
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
-        run: cargo build --release --target x86_64-pc-windows-msvc --bin rt_ocr
+        run: cargo build --release --locked --manifest-path rt_ocr/Cargo.toml --target x86_64-pc-windows-msvc
 
-      - name: Build wreq_cli on Windows x86 Debug
+      - name: Build wreq_cli on Windows x86
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
-        run: cargo build --target i686-pc-windows-msvc --bin wreq_cli
+        run: cargo build --release --locked --manifest-path wreq_cli/Cargo.toml --target i686-pc-windows-msvc
 
       - name: Build wreq_cli on Windows x64
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
-        run: cargo build --release --target x86_64-pc-windows-msvc --bin wreq_cli
+        run: cargo build --release --locked --manifest-path wreq_cli/Cargo.toml --target x86_64-pc-windows-msvc
 
       - name: Rename x64 binaries
         shell: pwsh
         run: |
-          Copy-Item target/x86_64-pc-windows-msvc/release/rt_ocr.exe target/x86_64-pc-windows-msvc/release/rt_ocr_x64.exe
-          Copy-Item target/x86_64-pc-windows-msvc/release/wreq_cli.exe target/x86_64-pc-windows-msvc/release/wreq_cli_x64.exe
+          Copy-Item rt_ocr/target/x86_64-pc-windows-msvc/release/rt_ocr.exe rt_ocr/target/x86_64-pc-windows-msvc/release/rt_ocr_x64.exe
+          Copy-Item wreq_cli/target/x86_64-pc-windows-msvc/release/wreq_cli.exe wreq_cli/target/x86_64-pc-windows-msvc/release/wreq_cli_x64.exe
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/i686-pc-windows-msvc/debug/rt_ocr.exe
-            target/i686-pc-windows-msvc/debug/wreq_cli.exe
-            target/x86_64-pc-windows-msvc/release/rt_ocr_x64.exe
-            target/x86_64-pc-windows-msvc/release/wreq_cli_x64.exe
+            rt_ocr/target/i686-pc-windows-msvc/release/rt_ocr.exe
+            wreq_cli/target/i686-pc-windows-msvc/release/wreq_cli.exe
+            rt_ocr/target/x86_64-pc-windows-msvc/release/rt_ocr_x64.exe
+            wreq_cli/target/x86_64-pc-windows-msvc/release/wreq_cli_x64.exe
           tag_name: ${{ github.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
