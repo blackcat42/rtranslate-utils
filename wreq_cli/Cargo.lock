@@ -1727,9 +1727,9 @@ dependencies = [
  "anyhow",
  "base64",
  "clap",
+ "http",
  "thunk-rs",
  "tokio",
- "url",
  "wreq",
  "wreq-util",
 ]

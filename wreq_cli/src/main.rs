@@ -263,10 +263,13 @@ fn make_request_with_wreq(args: Args) -> Result<String> {
         if let Some(f) = args.cookies_jar_path {
             let mut netscape_cookies: Vec<NetscapeCookie> = Vec::new();
 
+            let parsed_url = args.url.parse::<http::Uri>().unwrap();
+            let request_domain = parsed_url.host().unwrap();
+            
             for cookie in resp.cookies() {
-                let domain = cookie.domain().unwrap_or(&args.url);
-                //let include_subdomains = if domain.starts_with('.') { "TRUE" } else { "FALSE" };
-                let include_subdomains = "TRUE";
+                let domain = cookie.domain();
+                let include_subdomains = if domain.is_some() { "TRUE" } else { "FALSE" };
+                let domain = domain.unwrap_or(request_domain);
                 let path = cookie.path().unwrap_or("/");
                 let secure = if cookie.secure() { "TRUE" } else { "FALSE" };
 
@@ -356,8 +359,17 @@ fn get_timestamp() -> i64 {
         .unwrap_or(0)
 }
 
+fn domain_match(request_host: &str, cookie_host: &str, include_subdomains: &str) -> bool {
+    //println!("request_host: {}, cookie_host: {}", request_host, cookie_host);
+    if (include_subdomains == "TRUE" && request_host.ends_with(cookie_host)) 
+    || request_host == cookie_host {
+        return true;
+    }
+    false
+}
 
 fn path_match(request_path: &str, cookie_path: &str) -> bool {
+    //println!("request_path: {}, cookie_path: {}", request_path, cookie_path);
     if request_path == cookie_path {
         return true;
     }
@@ -379,8 +391,9 @@ fn read_cookies(f: &str, url: &str) -> Result<(Vec<NetscapeCookie>, Vec<String>)
     if !Path::new(f).exists() {
         return Err(anyhow!("path"));
     }
-    let parsed_url = url::Url::parse(url).unwrap();
+    let parsed_url = url.parse::<http::Uri>()?;
     let request_path = parsed_url.path();
+    let request_domain = parsed_url.host().ok_or(anyhow!("err"))?;
 
     let mut cookie_pairs = Vec::new();
     let file = File::open(f)?;
@@ -398,12 +411,24 @@ fn read_cookies(f: &str, url: &str) -> Result<(Vec<NetscapeCookie>, Vec<String>)
             let name = parts[5];
             let value = parts[6];
             let cookie_path = parts[2];
-            //let d = parts[0].replace("#HttpOnly_", "");
+            let cookie_domain = parts[0].to_string().replace("#HttpOnly_", "");
+            let include_subdomains = parts[1].to_string();
 
             netscape_cookies.push(
-                NetscapeCookie {domain: parts[0].to_string(), include_subdomains: parts[1].to_string(), path: cookie_path.to_string(), secure: parts[3].to_string(), exp: parts[4].to_string(), name: name.to_string(), value: value.to_string()}
+                NetscapeCookie {
+                    domain: cookie_domain.clone(), 
+                    include_subdomains: include_subdomains.clone(), 
+                    path: cookie_path.to_string(), 
+                    secure: parts[3].to_string(), 
+                    exp: parts[4].to_string(), 
+                    name: name.to_string(), 
+                    value: value.to_string()
+                }
             );
 
+            if !domain_match(request_domain, &cookie_domain, &include_subdomains) {
+                continue;
+            }
             if !path_match(request_path, cookie_path) {
                 continue;
             }

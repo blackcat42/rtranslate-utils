@@ -8,12 +8,13 @@ publish = false
 [dependencies]
 clap = { version = "4.6.2", features = ["derive"] }
 tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread"] }
+http = "=1.5.0"
 wreq = { version = "0.15.3", features = ["gzip", "stream", "cookies", "socks"] }
 wreq-util = "0.1.0"
 anyhow = "1.0.100"
 #bincode = "=1.3.3"
 base64 = "=0.22.1"
-url = "=2.5.8"
+#url = "=2.5.8"
 
 [build-dependencies]
 thunk-rs = { version = "0.3.5", features = ["xp"] } #"subsystem_windows", , "vc_ltl_only"
